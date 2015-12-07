@@ -115,7 +115,7 @@ instance Show Instruction where
 
 -- | Get an instruction's first operand
 getInstOp1 :: Instruction -> Operand
-getInstOp1 (Add op _ _) = op
+getInstOp1 (_ op _ _) = op
 getInstOp1 (And op _ _) = op
 getInstOp1 (Bisz op _ _) = op
 getInstOp1 (Bsh op _ _) = op
@@ -195,15 +195,18 @@ showInst (Xor _ _ _) = "xor"
 
 -- | Show an instruction's first operand
 showInstOp1 :: Instruction -> String
-showInstOp1 = show . getInstOp1
+showInstOp1 =
+    show . getInstOp1
 
 -- | Show an instruction's second operand
 showInstOp2 :: Instruction -> String
-showInstOp2 = show . getInstOp2
+showInstOp2 =
+    show . getInstOp2
 
 -- | Show an instruction's third operand
 showInstOp3 :: Instruction -> String
-showInstOp3 = show . getInstOp3
+showInstOp3 =
+    show . getInstOp3
 
 -- | A statement consists of an instruction at a specific address
 data Stmt =

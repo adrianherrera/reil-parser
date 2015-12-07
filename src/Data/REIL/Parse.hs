@@ -27,11 +27,13 @@ import Data.REIL.InstructionSet as IS
 
 -- Applicative cons (is this name accurate?)
 (<:>) :: Applicative f => f a -> f [a] -> f [a]
-h <:> t = (:) <$> h <*> t
+h <:> t =
+    (:) <$> h <*> t
 
 -- Parse 1 or more digits
 digits :: Parser String
-digits = many1 digit
+digits =
+    many1 digit
 
 -------------------------------------------------------------------------------
 
