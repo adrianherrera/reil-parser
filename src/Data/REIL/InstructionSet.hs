@@ -115,7 +115,7 @@ instance Show Instruction where
 
 -- | Get an instruction's first operand
 getInstOp1 :: Instruction -> Operand
-getInstOp1 (_ op _ _) = op
+getInstOp1 (Add op _ _) = op
 getInstOp1 (And op _ _) = op
 getInstOp1 (Bisz op _ _) = op
 getInstOp1 (Bsh op _ _) = op

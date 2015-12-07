@@ -131,8 +131,8 @@ registerOperand =
 -- calculated using the formula @xxx * 0x100 + yyy@
 offsetOperand :: Parser IS.Operand
 offsetOperand =
-    IS.Offset <$> (string "ADDRESS" >> spaces *> fromDecAddr)
-    where fromDecAddr = do
+    IS.Offset <$> (string "ADDRESS" >> spaces *> decimalAddress)
+    where decimalAddress = do
                         addr <- digits
                         _ <- char '.'
                         off <- digits
