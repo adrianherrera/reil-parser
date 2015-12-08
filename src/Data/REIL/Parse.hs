@@ -5,8 +5,7 @@ Maintainer  : Adrian Herrera
 Stability   : experimental
 -}
 
--- | This module parses a text file containing REIL instructions and generates
--- a control flow graph from these instructions.
+-- | This module parses a text file containing REIL instructions.
 
 module Data.REIL.Parse (
     parseReilFile
@@ -19,7 +18,7 @@ import Control.Applicative hiding ((<|>), many)
 
 import Numeric (readHex)
 
-import Data.REIL.InstructionSet as IS
+import qualified Data.REIL.InstructionSet as IS
 
 -------------------------------------------------------------------------------
 -- Helper functions
@@ -46,9 +45,12 @@ address =
         let ((hexInt, _) : _) = readHex addr
         return hexInt
 
+-- Type synonym for convienience
+type InstructionConstructor = IS.Operand -> IS.Operand -> IS.Operand -> IS.Instruction
+
 -- | Valid REIL instructions
-instruction' :: Parser (IS.Operand -> IS.Operand -> IS.Operand -> IS.Instruction)
-instruction' =
+instructionConstructor :: Parser InstructionConstructor
+instructionConstructor =
     (IS.Add <$ try (string "add"))
     <|> (IS.And <$ try (string "and"))
     <|> (IS.Bisz <$ try (string "bisz"))
@@ -74,7 +76,7 @@ instruction' =
 instruction :: Parser IS.Instruction
 instruction =
     do
-        inst <- instruction'
+        inst <- instructionConstructor
         _ <- spaces >> char '['
         op1 <- operand
         _ <- operandSeparator
@@ -96,7 +98,7 @@ operand =
 
 -- | Parse a REIL operand size. An operand size is one of the strings "BYTE",
 -- "WORD", "DWORD", "QWORD" or "OWORD"
-operandSize :: Parser OperandSize
+operandSize :: Parser IS.OperandSize
 operandSize =
     (IS.Byte <$ string "BYTE")
     <|> (IS.Word <$ string "WORD")
