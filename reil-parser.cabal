@@ -6,7 +6,7 @@ Author:              Adrian Herrera
 Maintainer:          Adrian Herrera
 Category:            Text
 Build-type:          Simple
-Cabal-version:       >=1.16
+Cabal-version:       >=1.10
 Synopsis:            REIL parsing library
 
 Description:
@@ -19,12 +19,13 @@ Source-repository head
 
 Library
   Hs-source-dirs:      src
-  Exposed-modules:     Data.REIL.CFG,
+  Exposed-modules:     Data.REIL.Parse,
                        Data.REIL.InstructionSet
 
   Default-language:    Haskell2010
 
-  Other-modules:       Data.REIL.Parse
+  Other-modules:       Data.REIL.BasicBlock,
+                       Data.REIL.CFG
 
   Ghc-options:         -Wall
 

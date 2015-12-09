@@ -11,13 +11,13 @@ Stability   : experimental
 
 module Data.REIL.InstructionSet (
     Address,
+    showAddress,
     OperandSize(..),
     Operand(..),
     Instruction(..),
     getInstOp1,
     getInstOp2,
     getInstOp3,
-    Stmt(..),
 ) where
 
 import Numeric (showHex)
@@ -59,7 +59,8 @@ data Operand =
     | Offset Address
 
 instance Show Operand where
-    show Empty = "EMPTY"
+    show Empty =
+        "EMPTY"
     show (IntegerLiteral lit size) =
         show size ++ " " ++ show lit
     show (Register reg size) =
@@ -207,11 +208,3 @@ showInstOp2 =
 showInstOp3 :: Instruction -> String
 showInstOp3 =
     show . getInstOp3
-
--- | A statement consists of an instruction at a specific address
-data Stmt =
-    Stmt Address Instruction
-
-instance Show Stmt where
-    show (Stmt addr inst) =
-        showAddress addr ++ ": " ++ show inst

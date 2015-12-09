@@ -8,7 +8,7 @@ Stability   : experimental
 -- | This module parses a text file containing REIL instructions.
 
 module Data.REIL.Parse (
-    parseReilFile
+    parseReilFile,
 ) where
 
 import Text.Parsec
@@ -19,6 +19,8 @@ import Control.Applicative hiding ((<|>), many)
 import Numeric (readHex)
 
 import qualified Data.REIL.InstructionSet as IS
+import qualified Data.REIL.BasicBlock as BB
+import qualified Data.REIL.CFG as CFG
 
 -------------------------------------------------------------------------------
 -- Helper functions
@@ -149,16 +151,11 @@ addressInstructionSep =
 
 -- | Parse a statement (combination of an address and an instruction - with a
 -- separator in between)
-statement :: Parser IS.Stmt
+statement :: Parser BB.Stmt
 statement =
-    IS.Stmt <$> address <* addressInstructionSep <*> instruction
+    BB.Stmt <$> address <* addressInstructionSep <*> instruction
 
 -- | Parse a number of statements separated by a new line
-statements :: Parser [IS.Stmt]
+statements :: Parser [BB.Stmt]
 statements =
     sepEndBy statement newline
-
--- | Parse a text file containing REIL code
-parseReilFile :: String -> IO (Either ParseError [IS.Stmt])
-parseReilFile =
-    parseFromFile statements
