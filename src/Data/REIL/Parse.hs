@@ -8,7 +8,7 @@ Stability   : experimental
 -- | This module parses a text file containing REIL instructions.
 
 module Data.REIL.Parse (
-    parseReilFile,
+    -- TODO
 ) where
 
 import Text.Parsec
@@ -48,7 +48,8 @@ address =
         return hexInt
 
 -- Type synonym for convienience
-type InstructionConstructor = IS.Operand -> IS.Operand -> IS.Operand -> IS.Instruction
+type InstructionConstructor =
+    IS.Operand -> IS.Operand -> IS.Operand -> IS.Instruction
 
 -- | Valid REIL instructions
 instructionConstructor :: Parser InstructionConstructor
