@@ -54,8 +54,7 @@ instance Show Stmt where
     show (Stmt addr inst) =
         IS.showAddress addr ++ ": " ++ show inst
 
--- | A basic block consists of a start address and a list of statements
--- contained within
+-- | A basic block consists of a sequence of statements
 newtype BasicBlock =
     BasicBlock (Seq Stmt)
 
@@ -84,12 +83,13 @@ emptyBasicBlock :: BasicBlock
 emptyBasicBlock =
     BasicBlock empty
 
--- | Add a statement to a basic block. The statement is only added if its
--- address is greater than the address of the last statement in the basic block
+-- | Add a statement to the end of a basic block. The statement is only added
+-- if its address is greater than the address of the last statement in the
+-- basic block
 addStmt :: BasicBlock -> Stmt -> BasicBlock
 addStmt (BasicBlock stmts) stmt
     | checkLastStmt = BasicBlock $ stmts |> stmt
-    | otherwise = error ""
+    | otherwise = error "Unable to add the statement to the basic block"
     -- Check that the statement that we are about to add to the basic block
     -- has an address greater than that of the last statement in this basic
     -- block
