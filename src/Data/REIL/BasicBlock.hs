@@ -10,13 +10,13 @@ Stability   : experimental
 module Data.REIL.BasicBlock (
     Stmt(..),
     BasicBlock(..),
-    emptyBasicBlock,
+    empty,
     startAddress,
     endAddress,
     addStmt,
 ) where
 
-import Data.Sequence as S
+import qualified Data.Sequence as S
 import Data.Foldable (toList)
 
 import qualified Data.REIL.InstructionSet as IS
@@ -26,19 +26,21 @@ import qualified Data.REIL.InstructionSet as IS
 -------------------------------------------------------------------------------
 
 -- | First element of a sequence, or @Nothing@ if the sequence is empty
-seqHead :: Seq a -> Maybe a
-seqHead (viewl -> x :< _) =
+seqHead :: S.Seq a -> Maybe a
+seqHead (S.viewl -> x S.:< _) =
     Just x
 seqHead _ =
     Nothing
 
 -- | Last element of a sequence, or @Nothing@ if the sequence is empty
-seqLast :: Seq a -> Maybe a
-seqLast (viewr -> _ :> x) =
+seqLast :: S.Seq a -> Maybe a
+seqLast (S.viewr -> _ S.:> x) =
     Just x
 seqLast _ =
     Nothing
 
+-------------------------------------------------------------------------------
+-- Statement
 -------------------------------------------------------------------------------
 
 -- | A statement consists of an instruction at a specific address
@@ -54,9 +56,13 @@ instance Show Stmt where
     show (Stmt addr inst) =
         IS.showAddress addr ++ ": " ++ show inst
 
+-------------------------------------------------------------------------------
+-- Basic block
+-------------------------------------------------------------------------------
+
 -- | A basic block consists of a sequence of statements
 newtype BasicBlock =
-    BasicBlock (Seq Stmt)
+    BasicBlock (S.Seq Stmt)
 
 instance Show BasicBlock where
     show (BasicBlock stmts) =
@@ -79,16 +85,16 @@ endAddress (BasicBlock _) =
     Nothing
 
 -- | Create an empty basic block
-emptyBasicBlock :: BasicBlock
-emptyBasicBlock =
-    BasicBlock empty
+empty :: BasicBlock
+empty =
+    BasicBlock S.empty
 
 -- | Add a statement to the end of a basic block. The statement is only added
 -- if its address is greater than the address of the last statement in the
 -- basic block
 addStmt :: BasicBlock -> Stmt -> BasicBlock
 addStmt (BasicBlock stmts) stmt
-    | checkLastStmt = BasicBlock $ stmts |> stmt
+    | checkLastStmt = BasicBlock $ stmts S.|> stmt
     | otherwise = error "Unable to add the statement to the basic block"
     -- Check that the statement that we are about to add to the basic block
     -- has an address greater than that of the last statement in this basic
