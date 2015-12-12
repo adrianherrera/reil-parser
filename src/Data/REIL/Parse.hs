@@ -152,11 +152,6 @@ addressInstructionSep =
 
 -- | Parse a statement (combination of an address and an instruction - with a
 -- separator in between)
-statement :: Parser BB.Stmt
+statement :: Parser BB.Statement
 statement =
-    BB.Stmt <$> address <* addressInstructionSep <*> instruction
-
--- | Parse a number of statements separated by a new line
-statements :: Parser [BB.Stmt]
-statements =
-    sepEndBy statement newline
+    BB.Statement <$> address <* addressInstructionSep <*> instruction

@@ -8,97 +8,96 @@ Stability   : experimental
 {-# LANGUAGE ViewPatterns #-}
 
 module Data.REIL.BasicBlock (
-    Stmt(..),
+    Statement(..),
     BasicBlock(..),
     empty,
+    null,
     startAddress,
     endAddress,
-    addStmt,
+    addStatement,
 ) where
 
-import qualified Data.Sequence as S
-import Data.Foldable (toList)
+import Prelude hiding (null)
+import qualified Data.Map as M
 
 import qualified Data.REIL.InstructionSet as IS
-
--------------------------------------------------------------------------------
--- Helper functions
--------------------------------------------------------------------------------
-
--- | First element of a sequence, or @Nothing@ if the sequence is empty
-seqHead :: S.Seq a -> Maybe a
-seqHead (S.viewl -> x S.:< _) =
-    Just x
-seqHead _ =
-    Nothing
-
--- | Last element of a sequence, or @Nothing@ if the sequence is empty
-seqLast :: S.Seq a -> Maybe a
-seqLast (S.viewr -> _ S.:> x) =
-    Just x
-seqLast _ =
-    Nothing
 
 -------------------------------------------------------------------------------
 -- Statement
 -------------------------------------------------------------------------------
 
 -- | A statement consists of an instruction at a specific address
-data Stmt =
-    Stmt {
-        -- | The Address that the instruction is located at
-        stmtAddr :: IS.Address,
-        -- | The statement's instruction
-        stmtInst :: IS.Instruction
-    }
+data Statement =
+    Statement IS.Address IS.Instruction
 
-instance Show Stmt where
-    show (Stmt addr inst) =
+instance Show Statement where
+    show (Statement addr inst) =
         IS.showAddress addr ++ ": " ++ show inst
+
+-- Map of addresses to the instruction located at that address
+type StatementMap = M.Map IS.Address IS.Instruction
+
+-- Find an address in a statement map based on a given `find` function (e.g.
+-- Map.findMin or Map.findMax)
+findAddr :: (StatementMap -> (IS.Address, IS.Instruction)) -> StatementMap -> Maybe IS.Address
+findAddr _ (M.null -> True) =
+    Nothing
+findAddr func stmts =
+    Just $ fst $ func stmts
+
+-- Find the minimum address in a statement map
+findMinAddr :: StatementMap -> Maybe IS.Address
+findMinAddr =
+    findAddr M.findMin
+
+-- Find the maximum address in a statement map
+findMaxAddr :: StatementMap -> Maybe IS.Address
+findMaxAddr =
+    findAddr M.findMax
 
 -------------------------------------------------------------------------------
 -- Basic block
 -------------------------------------------------------------------------------
 
--- | A basic block consists of a sequence of statements
+-- | A basic block consists of a map of statements
 newtype BasicBlock =
-    BasicBlock (S.Seq Stmt)
-
-instance Show BasicBlock where
-    show (BasicBlock stmts) =
-        show $ toList stmts
-
--- | Get the start address for a basic block. If the basic block is empty,
--- return @Nothing@
-startAddress :: BasicBlock -> Maybe IS.Address
-startAddress (BasicBlock (seqHead -> Just stmt)) =
-    Just $ stmtAddr stmt
-startAddress (BasicBlock _) =
-    Nothing
-
--- | Get the end address for a basic block. If the basic block is empty, return
--- @Nothing@
-endAddress :: BasicBlock -> Maybe IS.Address
-endAddress (BasicBlock (seqLast -> Just stmt)) =
-    Just $ stmtAddr stmt
-endAddress (BasicBlock _) =
-    Nothing
+    BasicBlock StatementMap
 
 -- | Create an empty basic block
 empty :: BasicBlock
 empty =
-    BasicBlock S.empty
+    BasicBlock M.empty
+
+-- | Check if the basic block is empty
+null :: BasicBlock -> Bool
+null (BasicBlock stmts) =
+    M.null stmts
+
+-- | Get the start address for a basic block. If the basic block is empty,
+-- return @Nothing@
+startAddress :: BasicBlock -> Maybe IS.Address
+startAddress (BasicBlock stmts) =
+    findMinAddr stmts
+
+-- | Get the end address for a basic block. If the basic block is empty, return
+-- @Nothing@
+endAddress :: BasicBlock -> Maybe IS.Address
+endAddress (BasicBlock stmts) =
+    findMaxAddr stmts
 
 -- | Add a statement to the end of a basic block. The statement is only added
 -- if its address is greater than the address of the last statement in the
 -- basic block
-addStmt :: BasicBlock -> Stmt -> BasicBlock
-addStmt (BasicBlock stmts) stmt
-    | checkLastStmt = BasicBlock $ stmts S.|> stmt
+addStatement :: BasicBlock -> Statement -> BasicBlock
+addStatement (null -> True) (Statement addr inst) =
+    BasicBlock $ M.singleton addr inst
+addStatement (BasicBlock stmts) (Statement addr inst)
+    | checkStatement = BasicBlock $ M.insert addr inst stmts
     | otherwise = error "Unable to add the statement to the basic block"
-    -- Check that the statement that we are about to add to the basic block
-    -- has an address greater than that of the last statement in this basic
-    -- block
-    where checkLastStmt = case seqLast stmts of
-                            Nothing -> True
-                            Just lastStmt -> stmtAddr stmt > stmtAddr lastStmt
+    -- Check that the address of the instruction that we are about to add to
+    -- the basic block does not already exist.
+    --
+    -- Also check that the address of the instruction that we are about to add
+    -- to the basic block is greater than the last statement in the basic block
+    where checkStatement = M.notMember addr stmts &&
+                      addr > (fst $ M.findMax stmts)
