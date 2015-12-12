@@ -1,5 +1,5 @@
 """
-Parse a module in a BinNavi database and translate it to REIL.
+Parse a module in a BinNavi database and translate it to REIL code.
 
 Author: Adrian Herrera
 """
@@ -222,7 +222,8 @@ def main():
     module.close()
     database.close()
 
-    print('REIL code for %s written to %s' % (args.module, args.output))
+    print('REIL code for `%s` successfully written to `%s`' % \
+        (args.module, args.output))
 
 
 if __name__ == '__main__':
