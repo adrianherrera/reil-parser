@@ -48,9 +48,8 @@ def parse_args():
     parser.add_argument('-i', '--db-identity', action='store', required=True,
                         help='The identity under which the current user '
                         'operates')
-    parser.add_argument('-m', '--module', action='store', required=True,
-                        help='Module name')
-    parser.add_argument('-o', '--output', action='store', required=True,
+    parser.add_argument('-m', '--module', action='store', help='Module name')
+    parser.add_argument('-o', '--output', action='store',
                         help='Output file path')
 
     return parser.parse_args()
@@ -193,13 +192,19 @@ def main():
     database.connect()
     database.load()
 
+    # If no module was specified, list the available modules
+    available_modules = ['`%s`' % mod.getName() for
+                         mod in database.getModules()]
+    if args.module is None:
+        print('No module specified. Available modules: %s' % \
+              ', '.join(available_modules))
+        sys.exit(1)
+
     # Load the required module
     module = get_module(database, args.module)
     if module is None:
-        module_names = ['`%s`' % mod.getName() for
-                        mod in database.getModules()]
-        print_error('Unable to load module `%s`. Available modules are %s' % \
-            (args.module, ', '.join(module_names)))
+        print_error('Unable to load module `%s`. Available modules: %s' % \
+            (args.module, ', '.join(available_modules)))
         sys.exit(1)
     module.load()
 
@@ -215,15 +220,18 @@ def main():
     # Write translated REIL code to the output file
     reil_str = '\n'.join([str(node).strip() for _, func in reil_functions
                                             for node in func])
-    with open(args.output, 'w') as out_file:
-        out_file.write(reil_str)
+    if args.output is None:
+        print('\n\n%s' % reil_str)
+    else:
+        with open(args.output, 'w') as out_file:
+            out_file.write(reil_str)
+
+            print('REIL code for `%s` successfully written to `%s`' % \
+                  (args.module, args.output))
 
     # Clean up
     module.close()
     database.close()
-
-    print('REIL code for `%s` successfully written to `%s`' % \
-        (args.module, args.output))
 
 
 if __name__ == '__main__':
