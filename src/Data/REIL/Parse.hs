@@ -11,6 +11,8 @@ module Data.REIL.Parse (
     -- TODO
 ) where
 
+import qualified Data.Map as M
+
 import Text.Parsec
 import Text.Parsec.String
 
@@ -155,3 +157,10 @@ addressInstructionSep =
 statement :: Parser BB.Statement
 statement =
     BB.Statement <$> address <* addressInstructionSep <*> instruction
+
+-- | Parse multiple statements (separated by a new line)
+statements :: Parser (M.Map IS.Address IS.Instruction)
+statements =
+    foldr insertStmt M.empty <$> sepEndBy statement newline
+    where insertStmt (BB.Statement addr inst) stmtMap =
+                                                    M.insert addr inst stmtMap

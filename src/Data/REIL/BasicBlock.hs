@@ -34,24 +34,23 @@ instance Show Statement where
     show (Statement addr inst) =
         IS.showAddress addr ++ ": " ++ show inst
 
--- Map of addresses to the instruction located at that address
-type StatementMap = M.Map IS.Address IS.Instruction
-
 -- Find an address in a statement map based on a given `find` function (e.g.
 -- Map.findMin or Map.findMax)
-findAddr :: (StatementMap -> (IS.Address, IS.Instruction)) -> StatementMap -> Maybe IS.Address
+findAddr :: (M.Map IS.Address IS.Instruction -> (IS.Address, IS.Instruction))
+            -> M.Map IS.Address IS.Instruction
+            -> Maybe IS.Address
 findAddr _ (M.null -> True) =
     Nothing
 findAddr func stmts =
     Just $ fst $ func stmts
 
 -- Find the minimum address in a statement map
-findMinAddr :: StatementMap -> Maybe IS.Address
+findMinAddr :: M.Map IS.Address IS.Instruction -> Maybe IS.Address
 findMinAddr =
     findAddr M.findMin
 
 -- Find the maximum address in a statement map
-findMaxAddr :: StatementMap -> Maybe IS.Address
+findMaxAddr :: M.Map IS.Address IS.Instruction -> Maybe IS.Address
 findMaxAddr =
     findAddr M.findMax
 
@@ -61,7 +60,7 @@ findMaxAddr =
 
 -- | A basic block consists of a map of statements
 newtype BasicBlock =
-    BasicBlock StatementMap
+    BasicBlock (M.Map IS.Address IS.Instruction)
 
 -- | Create an empty basic block
 empty :: BasicBlock
@@ -100,4 +99,4 @@ addStatement (BasicBlock stmts) (Statement addr inst)
     -- Also check that the address of the instruction that we are about to add
     -- to the basic block is greater than the last statement in the basic block
     where checkStatement = M.notMember addr stmts &&
-                      addr > (fst $ M.findMax stmts)
+                           addr > (fst $ M.findMax stmts)

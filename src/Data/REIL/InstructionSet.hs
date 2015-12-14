@@ -11,6 +11,7 @@ Stability   : experimental
 
 module Data.REIL.InstructionSet (
     Address,
+    RegisterName,
     showAddress,
     OperandSize(..),
     Operand(..),
@@ -24,6 +25,8 @@ import Numeric (showHex)
 
 -- | For our purposes an address is simply an integer
 type Address = Int
+
+type RegisterName = String
 
 -- | Pretty-print an address
 showAddress :: Address -> String
@@ -55,7 +58,7 @@ instance Show OperandSize where
 data Operand =
     Empty
     | IntegerLiteral Int OperandSize
-    | Register String OperandSize
+    | Register RegisterName OperandSize
     | Offset Address
 
 instance Show Operand where
@@ -91,7 +94,7 @@ data Instruction =
     | Mod Operand Operand Operand
     -- | Unsigned multiplication
     | Mul Operand Operand Operand
-    -- | No operation
+    -- | Nop operation
     | Nop Operand Operand Operand
     -- | Bitwise or
     | Or Operand Operand Operand
