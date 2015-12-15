@@ -26,6 +26,7 @@ import Numeric (showHex)
 -- | For our purposes an address is simply an integer
 type Address = Int
 
+-- | A register name is just a string
 type RegisterName = String
 
 -- | Pretty-print an address
