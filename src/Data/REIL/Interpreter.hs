@@ -12,8 +12,8 @@ import qualified Data.Map as M
 
 import qualified Data.REIL.InstructionSet as IS
 
--- | The environment essentially describes the program's "state". It consists
--- of data stored in both registers and memory
+-- | The environment describes a program's "state". It consists of data stored
+-- in both registers and memory.
 data Environment a =
     Environment {
         -- | Map of register names to the value the register contains
@@ -26,7 +26,8 @@ data Environment a =
 -- result
 class Interpreter a where
     -- | Given an environment, "execute" an instruction and return a new,
-    -- updated environment
+    -- updated environment. This function should describe the language's big
+    -- step operational semantics
     execute :: IS.Instruction -> Environment a -> Environment a
 
 -- | This interpreter instance essentially describes REIL's concrete semantics
