@@ -6,8 +6,11 @@ Stability   : experimental
 -}
 
 module Data.REIL.Interpreter (
+    Environment(..),
+    Interpreter(..),
 ) where
 
+import Data.Bits
 import qualified Data.Map as M
 
 import qualified Data.REIL.InstructionSet as IS
@@ -22,6 +25,22 @@ data Environment a =
         memory :: M.Map IS.Address a
     }
 
+-- | Update a register in the current environment with a new value
+updateRegister :: IS.RegisterName -> a -> Environment a -> Environment a
+updateRegister register value env =
+    Environment {
+        registers = M.insert register value (registers env),
+        memory = memory env
+    }
+
+-- | Update a memory address in the current environment with a new value
+updateMemory :: IS.Address -> a -> Environment a -> Environment a
+updateMemory address value env =
+    Environment {
+        registers = registers env,
+        memory = M.insert address value (memory env)
+    }
+
 -- | An interpreter "executes" instructions and updates its environment as a
 -- result
 class Interpreter a where
@@ -34,211 +53,211 @@ class Interpreter a where
 instance Interpreter Int where
     -- Add instruction
     execute (IS.Add (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
-        undefined
+                    (IS.IntegerLiteral i2 _)
+                    (IS.Register r _)) env =
+        updateRegister r (i1 + i2) env
     execute (IS.Add (IS.IntegerLiteral i _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Add (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                    (IS.IntegerLiteral i _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Add (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                    (IS.Register r2 _)
+                    (IS.Register r3 _)) env =
         undefined
     -- And instruction
     execute (IS.And (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
-        undefined
+                    (IS.IntegerLiteral i2 _)
+                    (IS.Register r _)) env =
+        updateRegister r (i1 .&. i2) env
     execute (IS.And (IS.IntegerLiteral i _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.And (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                    (IS.IntegerLiteral i _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.And (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                    (IS.Register r2 _)
+                    (IS.Register r3 _)) env =
         undefined
     -- Bisz instruction
     execute (IS.Bisz (IS.IntegerLiteral i _)
-                       _
-                       (IS.Register r _)) env =
+                     _
+                     (IS.Register r _)) env =
         undefined
     execute (IS.Bisz (IS.Register r1 _)
-                       _
-                       (IS.Register r2 _)) env =
+                     _
+                     (IS.Register r2 _)) env =
         undefined
     -- Bsh instruction
     execute (IS.Bsh (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
+                    (IS.IntegerLiteral i2 _)
+                    (IS.Register r _)) env =
         undefined
     execute (IS.Bsh (IS.IntegerLiteral i1 _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Bsh (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                    (IS.IntegerLiteral i _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Bsh (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                    (IS.Register r2 _)
+                    (IS.Register r3 _)) env =
         undefined
     -- Div instruction
     execute (IS.Div (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
+                    (IS.IntegerLiteral i2 _)
+                    (IS.Register r _)) env =
         undefined
     execute (IS.Div (IS.IntegerLiteral i _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Div (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                    (IS.IntegerLiteral i _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Div (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                    (IS.Register r2 _)
+                    (IS.Register r3 _)) env =
         undefined
     -- Jcc instruction
     execute (IS.Jcc (IS.IntegerLiteral i1 _)
-                      _
-                      (IS.IntegerLiteral i2 _)) env =
+                    _
+                    (IS.IntegerLiteral i2 _)) env =
         undefined
     execute (IS.Jcc (IS.IntegerLiteral i _)
-                      _
-                      (IS.Register r _)) env =
+                    _
+                    (IS.Register r _)) env =
         undefined
     execute (IS.Jcc (IS.IntegerLiteral i _)
-                      _
-                      (IS.Offset o)) env =
+                    _
+                    (IS.Offset o)) env =
         undefined
     execute (IS.Jcc (IS.Register r _)
-                      _
-                      (IS.IntegerLiteral i _)) env =
+                    _
+                    (IS.IntegerLiteral i _)) env =
         undefined
     execute (IS.Jcc (IS.Register r1 _)
-                      _
-                      (IS.Register r2 _)) env =
+                    _
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Jcc (IS.Register r _)
-                      _
-                      (IS.Offset o)) env =
+                    _
+                    (IS.Offset o)) env =
         undefined
     -- Ldm instruction
     execute (IS.Ldm (IS.IntegerLiteral i _)
-                      _
-                      (IS.Register r _)) env =
+                    _
+                    (IS.Register r _)) env =
         undefined
     execute (IS.Ldm (IS.Register r1 _)
-                      _
-                      (IS.Register r2 _)) env =
+                    _
+                    (IS.Register r2 _)) env =
         undefined
     -- Mod instruction
     execute (IS.Mod (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
+                    (IS.IntegerLiteral i2 _)
+                    (IS.Register r _)) env =
         undefined
     execute (IS.Mod (IS.IntegerLiteral i _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Mod (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                    (IS.IntegerLiteral i _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Mod (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                    (IS.Register r2 _)
+                    (IS.Register r3 _)) env =
         undefined
     -- Mul instruction
     execute (IS.Mul (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
-        undefined
+                    (IS.IntegerLiteral i2 _)
+                    (IS.Register r _)) env =
+        updateRegister r (i1 * i2) env
     execute (IS.Mul (IS.IntegerLiteral i _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Mul (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                    (IS.IntegerLiteral i _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Mul (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                    (IS.Register r2 _)
+                    (IS.Register r3 _)) env =
         undefined
     -- Nop instruction
     execute (IS.Nop _ _ _) env =
         env
     -- Or instruction
     execute (IS.Or (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
-        undefined
+                   (IS.IntegerLiteral i2 _)
+                   (IS.Register r _)) env =
+        updateRegister r (i1 .|. i2) env
     execute (IS.Or (IS.IntegerLiteral i _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                   (IS.Register r1 _)
+                   (IS.Register r2 _)) env =
         undefined
     execute (IS.Or (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                   (IS.IntegerLiteral i _)
+                   (IS.Register r2 _)) env =
         undefined
     execute (IS.Or (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                   (IS.Register r2 _)
+                   (IS.Register r3 _)) env =
         undefined
     -- Stm instruction
     execute (IS.Stm (IS.IntegerLiteral i1 _)
-                      _
-                      (IS.IntegerLiteral i2 _)) env =
+                    _
+                    (IS.IntegerLiteral i2 _)) env =
         undefined
     execute (IS.Stm (IS.IntegerLiteral i _)
-                      _
-                      (IS.Register r _)) env =
+                    _
+                    (IS.Register r _)) env =
         undefined
     execute (IS.Stm (IS.Register r _)
-                      _
-                      (IS.IntegerLiteral i _)) env =
+                    _
+                    (IS.IntegerLiteral i _)) env =
         undefined
     execute (IS.Stm (IS.Register r1 _)
-                   _
-                   (IS.Register r2 _)) env =
+                    _
+                    (IS.Register r2 _)) env =
         undefined
     -- Str instruction
     execute (IS.Str (IS.IntegerLiteral i _)
-                      _
-                      (IS.Register r _)) env =
-        undefined
+                    _
+                    (IS.Register r _)) env =
+        updateRegister r i env
     execute (IS.Str (IS.Register r1 _)
-                      _
-                      (IS.Register r2 _)) env =
+                    _
+                    (IS.Register r2 _)) env =
         undefined
     -- Sub instruction
     execute (IS.Sub (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
-        undefined
+                    (IS.IntegerLiteral i2 _)
+                    (IS.Register r _)) env =
+        updateRegister r (i1 - i2) env
     execute (IS.Sub (IS.IntegerLiteral i _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Sub (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                    (IS.IntegerLiteral i _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Sub (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                    (IS.Register r2 _)
+                    (IS.Register r3 _)) env =
         undefined
     -- Undef instruction
     execute (IS.Undef _ _ (IS.Register r _)) env =
@@ -248,20 +267,20 @@ instance Interpreter Int where
         env
     -- Xor instruction
     execute (IS.Xor (IS.IntegerLiteral i1 _)
-                      (IS.IntegerLiteral i2 _)
-                      (IS.Register r _)) env =
-        undefined
+                    (IS.IntegerLiteral i2 _)
+                    (IS.Register r _)) env =
+        updateRegister r (i1 `xor` i2) env
     execute (IS.Xor (IS.IntegerLiteral i _)
-                      (IS.Register r1 _)
-                      (IS.Register r2 _)) env =
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Xor (IS.Register r1 _)
-                      (IS.IntegerLiteral i _)
-                      (IS.Register r2 _)) env =
+                    (IS.IntegerLiteral i _)
+                    (IS.Register r2 _)) env =
         undefined
     execute (IS.Xor (IS.Register r1 _)
-                      (IS.Register r2 _)
-                      (IS.Register r3 _)) env =
+                    (IS.Register r2 _)
+                    (IS.Register r3 _)) env =
         undefined
     -- Error
     execute inst _ =
