@@ -10,11 +10,18 @@ Stability   : experimental
 -- http://www.zynamics.com/binnavi/manual/html/reil_language.htm
 
 module Data.REIL.InstructionSet (
+    -- * Address
     Address,
-    RegisterName,
     showAddress,
-    OperandSize(..),
+
+    -- * Register
+    RegisterName,
+
+    -- * Operand
     Operand(..),
+    OperandSize(..),
+
+    -- * Instruction
     Instruction(..),
     getInstOp1,
     getInstOp2,
@@ -26,13 +33,13 @@ import Numeric (showHex)
 -- | For our purposes an address is simply an integer
 type Address = Int
 
--- | A register name is just a string
-type RegisterName = String
-
 -- | Pretty-print an address
 showAddress :: Address -> String
 showAddress addr =
     "0x" ++ showHex addr ""
+
+-- | A register name is just a string
+type RegisterName = String
 
 -- | The size of a REIL operand is either b1 (1 byte), b2 (2 bytes), b4 (4
 -- bytes), b8 (8 bytes) or b16 (16 bytes).

@@ -8,7 +8,10 @@ Stability   : experimental
 {-# LANGUAGE ViewPatterns #-}
 
 module Data.REIL.BasicBlock (
+    -- * Statement
     Statement(..),
+
+    -- * Basic block
     BasicBlock(..),
     empty,
     null,
