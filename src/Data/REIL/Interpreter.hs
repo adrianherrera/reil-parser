@@ -6,12 +6,15 @@ Stability   : experimental
 -}
 
 module Data.REIL.Interpreter (
+    -- * Environment
     Environment(..),
     newEnvironment,
     readRegister,
     writeRegister,
     readMemory,
     writeMemory,
+
+    -- * Interpreter
     Interpreter(..),
 ) where
 
@@ -38,10 +41,13 @@ newEnvironment =
         memory = M.empty
     }
 
--- | Read a register's value. Return @Nothing@ if the register is undefined
-readRegister :: IS.RegisterName -> Environment a -> Maybe a
+-- | Read a register's value. Calls 'error' if the register is undefined (see
+-- the @undef@ instruction).
+readRegister :: IS.RegisterName -> Environment a -> a
 readRegister reg env =
-    M.lookup reg (registers env)
+    case M.lookup reg (registers env) of
+        Just val -> val
+        Nothing -> error $ "Register " ++ show reg ++ " is not defined"
 
 -- | Write a value to a register
 writeRegister :: IS.RegisterName -> a -> Environment a -> Environment a
@@ -77,29 +83,26 @@ class Interpreter a where
 
 -- | This interpreter instance essentially describes an idealised version of
 -- REIL's concrete semantics. We ignore issues such as overflow, etc.
+--
+-- TODO how to handle the operand size?
 instance Interpreter Int where
     -- Add instruction
     execute (IS.Add (IS.IntegerLiteral i1 _)
                     (IS.IntegerLiteral i2 _)
                     (IS.Register r _)) env =
         writeRegister r (i1 + i2) env
-    execute inst@(IS.Add (IS.IntegerLiteral i _)
-                         (IS.Register r1 _)
-                         (IS.Register r2 _)) env =
-        case readRegister r1 env of
-            Just v -> writeRegister r2 (i + v) env
-            Nothing -> error $ "Register " ++ show r1 ++
-                               " is not defined in " ++ show inst
+    execute (IS.Add (IS.IntegerLiteral i _)
+                    (IS.Register r1 _)
+                    (IS.Register r2 _)) env =
+        writeRegister r2 (i + readRegister r1 env) env
     execute (IS.Add (IS.Register r1 _)
                     (IS.IntegerLiteral i _)
                     (IS.Register r2 _)) env =
-        case readRegister r1 env of
-            Just v -> writeRegister r2 (v + i) env
-
+        writeRegister r2 (readRegister r1 env + i) env
     execute (IS.Add (IS.Register r1 _)
                     (IS.Register r2 _)
                     (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env + readRegister r2 env) env
     -- And instruction
     execute (IS.And (IS.IntegerLiteral i1 _)
                     (IS.IntegerLiteral i2 _)
@@ -108,24 +111,27 @@ instance Interpreter Int where
     execute (IS.And (IS.IntegerLiteral i _)
                     (IS.Register r1 _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (i .&. readRegister r1 env) env
     execute (IS.And (IS.Register r1 _)
                     (IS.IntegerLiteral i _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env .&. i) env
     execute (IS.And (IS.Register r1 _)
                     (IS.Register r2 _)
                     (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env .&. readRegister r2 env) env
     -- Bisz instruction
     execute (IS.Bisz (IS.IntegerLiteral i _)
                      _
-                     (IS.Register r _)) env =
-        undefined
+                     (IS.Register r _)) env
+        | i == 0 = writeRegister r 1 env
+        | otherwise = writeRegister r 0 env
     execute (IS.Bisz (IS.Register r1 _)
                      _
-                     (IS.Register r2 _)) env =
-        undefined
+                     (IS.Register r2 _)) env
+        | val == 0 = writeRegister r2 1 env
+        | otherwise = writeRegister r2 0 env
+        where val = readRegister r1 env
     -- Bsh instruction
     execute (IS.Bsh (IS.IntegerLiteral i1 _)
                     (IS.IntegerLiteral i2 _)
@@ -151,15 +157,15 @@ instance Interpreter Int where
     execute (IS.Div (IS.IntegerLiteral i _)
                     (IS.Register r1 _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (i `quot` readRegister r1 env) env
     execute (IS.Div (IS.Register r1 _)
                     (IS.IntegerLiteral i _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env `quot` i) env
     execute (IS.Div (IS.Register r1 _)
                     (IS.Register r2 _)
                     (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env `quot` readRegister r2 env) env
     -- Jcc instruction
     execute (IS.Jcc (IS.IntegerLiteral i1 _)
                     _
@@ -189,11 +195,11 @@ instance Interpreter Int where
     execute (IS.Ldm (IS.IntegerLiteral i _)
                     _
                     (IS.Register r _)) env =
-        undefined
+        writeRegister r (readMemory i 0 env) env
     execute (IS.Ldm (IS.Register r1 _)
                     _
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readMemory (readRegister r1 env) 0 env) env
     -- Mod instruction
     execute (IS.Mod (IS.IntegerLiteral i1 _)
                     (IS.IntegerLiteral i2 _)
@@ -202,15 +208,15 @@ instance Interpreter Int where
     execute (IS.Mod (IS.IntegerLiteral i _)
                     (IS.Register r1 _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (i `mod` readRegister r1 env) env
     execute (IS.Mod (IS.Register r1 _)
                     (IS.IntegerLiteral i _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env `mod` i) env
     execute (IS.Mod (IS.Register r1 _)
                     (IS.Register r2 _)
                     (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env `mod` readRegister r2 env) env
     -- Mul instruction
     execute (IS.Mul (IS.IntegerLiteral i1 _)
                     (IS.IntegerLiteral i2 _)
@@ -219,15 +225,15 @@ instance Interpreter Int where
     execute (IS.Mul (IS.IntegerLiteral i _)
                     (IS.Register r1 _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (i * readRegister r1 env) env
     execute (IS.Mul (IS.Register r1 _)
                     (IS.IntegerLiteral i _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env * i) env
     execute (IS.Mul (IS.Register r1 _)
                     (IS.Register r2 _)
                     (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env * readRegister r2 env) env
     -- Nop instruction
     execute (IS.Nop _ _ _) env =
         env
@@ -239,32 +245,32 @@ instance Interpreter Int where
     execute (IS.Or (IS.IntegerLiteral i _)
                    (IS.Register r1 _)
                    (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (i .|. readRegister r1 env) env
     execute (IS.Or (IS.Register r1 _)
                    (IS.IntegerLiteral i _)
                    (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env .|. i) env
     execute (IS.Or (IS.Register r1 _)
                    (IS.Register r2 _)
                    (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env .|. readRegister r2 env) env
     -- Stm instruction
     execute (IS.Stm (IS.IntegerLiteral i1 _)
                     _
                     (IS.IntegerLiteral i2 _)) env =
-        writeMemory i1 i2 env
+        writeMemory i2 i1 env
     execute (IS.Stm (IS.IntegerLiteral i _)
                     _
                     (IS.Register r _)) env =
-        undefined
+        writeMemory (readRegister r env) i env
     execute (IS.Stm (IS.Register r _)
                     _
                     (IS.IntegerLiteral i _)) env =
-        undefined
+        writeMemory i (readRegister r env) env
     execute (IS.Stm (IS.Register r1 _)
                     _
                     (IS.Register r2 _)) env =
-        undefined
+        writeMemory (readRegister r2 env) (readRegister r1 env) env
     -- Str instruction
     execute (IS.Str (IS.IntegerLiteral i _)
                     _
@@ -273,7 +279,7 @@ instance Interpreter Int where
     execute (IS.Str (IS.Register r1 _)
                     _
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env) env
     -- Sub instruction
     execute (IS.Sub (IS.IntegerLiteral i1 _)
                     (IS.IntegerLiteral i2 _)
@@ -282,15 +288,15 @@ instance Interpreter Int where
     execute (IS.Sub (IS.IntegerLiteral i _)
                     (IS.Register r1 _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (i - readRegister r1 env) env
     execute (IS.Sub (IS.Register r1 _)
                     (IS.IntegerLiteral i _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env - i) env
     execute (IS.Sub (IS.Register r1 _)
                     (IS.Register r2 _)
                     (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env - readRegister r2 env) env
     -- Undef instruction
     execute (IS.Undef _ _ (IS.Register r _)) env =
         Environment {
@@ -308,15 +314,15 @@ instance Interpreter Int where
     execute (IS.Xor (IS.IntegerLiteral i _)
                     (IS.Register r1 _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (i `xor` readRegister r1 env) env
     execute (IS.Xor (IS.Register r1 _)
                     (IS.IntegerLiteral i _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env `xor` i) env
     execute (IS.Xor (IS.Register r1 _)
                     (IS.Register r2 _)
                     (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env `xor` readRegister r2 env) env
     -- Error
     execute inst _ =
         error $ "Invalid instruction: " ++ show inst
