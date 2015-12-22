@@ -49,6 +49,8 @@ def parse_args():
                         help='The identity under which the current user '
                         'operates')
     parser.add_argument('-m', '--module', action='store', help='Module name')
+    parser.add_argument('-f', '--function', action='store',
+                        help='Function name')
     parser.add_argument('-o', '--output', action='store',
                         help='Output file path')
 
@@ -104,19 +106,19 @@ def get_database(plugin_interface, db_info):
         return None
 
 
-def get_module(database, module_name):
+def get_module(database, name):
     """
     Get the module with the given name.
 
     Args:
         db (Database): The connected and loaded database
-        module_name (str): The module name
+        name (str): The module name
 
     Returns:
         The unloaded module, or `None` if it doesn't exist
     """
     for module in database.getModules():
-        if module.getName() == module_name:
+        if module.getName() == name:
             return module
 
     return None
@@ -137,8 +139,25 @@ def get_functions(module):
 
     # We are not interested in functions that are dynamically imported from an
     # external module
-    return [func for func in module.getFunctions()
-            if func.getType() != FunctionType.Import]
+    return [function for function in module.getFunctions()
+            if function.getType() != FunctionType.Import]
+
+def get_function(module, name):
+    """
+    Get the function with the given name.
+
+    Args:
+        module (Module): The loaded module
+        name (str): The function name
+
+    Returns:
+        The unloaded function, or `None` if it doesn't exist
+    """
+    for function in module.getFunctions():
+        if function.getName() == name:
+            return function
+
+    return None
 
 
 def get_reil(function):
@@ -198,7 +217,7 @@ def main():
     if args.module is None:
         print('No module specified. Available modules: %s' % \
               ', '.join(available_modules))
-        sys.exit(0)
+        sys.exit(1)
 
     # Load the required module
     module = get_module(database, args.module)
@@ -208,19 +227,33 @@ def main():
         sys.exit(1)
     module.load()
 
-    # Get a list of tuples that contain the start address and the REIL code for
-    # a particular function
-    functions = get_functions(module)
-    reil_functions = [get_reil(func) for func in functions]
+    if args.function is None:
+        # No function specified. Translate all functions
 
-    # Sort the functions by their start address (the first element in the
-    # tuple)
-    sorted(reil_functions, key=lambda f: f[0])
+        # Get a list of tuples that contain the start address and the REIL code
+        # for a particular function
+        functions = get_functions(module)
+        reil_functions = [get_reil(func) for func in functions]
 
-    # Write translated REIL code to the output file. Ignore the start address
-    # in the tuple
-    reil_str = '\n'.join([str(node).strip() for _, func in reil_functions
-                                            for node in func])
+        # Sort the functions by their start address (the first element in the
+        # tuple)
+        sorted(reil_functions, key=lambda f: f[0])
+
+        # Join all the REIL code for each function into a single string. Ignore
+        # the start address of the file
+        reil_str = '\n'.join([str(node).strip() for _, func in reil_functions
+                                                for node in func])
+    else:
+        # Search for the given function and only translate it
+        function = get_function(module, args.function)
+        if function is None:
+            print_error('Function `%s` does not exist' % args.function)
+            sys.exit(1)
+        _, reil_function = get_reil(function)
+
+        reil_str = '\n'.join(str(node).strip() for node in reil_function)
+
+    # Write translated REIL code to the output file
     if args.output is None:
         print('\n\n%s' % reil_str)
     else:
