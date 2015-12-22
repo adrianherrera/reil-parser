@@ -136,19 +136,19 @@ instance Interpreter Int where
     execute (IS.Bsh (IS.IntegerLiteral i1 _)
                     (IS.IntegerLiteral i2 _)
                     (IS.Register r _)) env =
-        undefined
-    execute (IS.Bsh (IS.IntegerLiteral i1 _)
+        writeRegister r (i1 `shift` i2) env
+    execute (IS.Bsh (IS.IntegerLiteral i _)
                     (IS.Register r1 _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (i `shift` readRegister r1 env) env
     execute (IS.Bsh (IS.Register r1 _)
                     (IS.IntegerLiteral i _)
                     (IS.Register r2 _)) env =
-        undefined
+        writeRegister r2 (readRegister r1 env `shift` i) env
     execute (IS.Bsh (IS.Register r1 _)
                     (IS.Register r2 _)
                     (IS.Register r3 _)) env =
-        undefined
+        writeRegister r3 (readRegister r1 env `shift` readRegister r2 env) env
     -- Div instruction
     execute (IS.Div (IS.IntegerLiteral i1 _)
                     (IS.IntegerLiteral i2 _)
