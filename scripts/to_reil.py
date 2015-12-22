@@ -198,7 +198,7 @@ def main():
     if args.module is None:
         print('No module specified. Available modules: %s' % \
               ', '.join(available_modules))
-        sys.exit(1)
+        sys.exit(0)
 
     # Load the required module
     module = get_module(database, args.module)
@@ -217,7 +217,8 @@ def main():
     # tuple)
     sorted(reil_functions, key=lambda f: f[0])
 
-    # Write translated REIL code to the output file
+    # Write translated REIL code to the output file. Ignore the start address
+    # in the tuple
     reil_str = '\n'.join([str(node).strip() for _, func in reil_functions
                                             for node in func])
     if args.output is None:
